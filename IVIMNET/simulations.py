@@ -22,7 +22,6 @@ import time
 import scipy.stats as scipy
 import torch
 import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import random
 import os

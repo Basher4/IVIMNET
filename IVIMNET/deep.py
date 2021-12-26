@@ -25,7 +25,6 @@ import torch.optim as optim
 import torch.utils.data as utils
 from tqdm import tqdm
 import matplotlib
-matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 import os
 import IVIMNET.fitting_algorithms as fit
@@ -674,7 +673,6 @@ def plot_progress(X_batch, X_pred, bvalues, loss_train, loss_val, arg):
     X_pred = X_pred[:, inds1]
     bvalues = bvalues[inds1]
     if arg.fig:
-        matplotlib.use('TkAgg')
         plt.close('all')
         fig, axs = plt.subplots(2, 2)
         axs[0, 0].plot(bvalues, X_batch.data[0], 'o')
