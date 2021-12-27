@@ -360,8 +360,8 @@ def learn_IVIM(X_train, bvalues, arg, net=None):
         X_train[X_train > 1.5] = 1.5
 
     # initialising the network of choice using the input argument arg
+    bvalues = torch.FloatTensor(bvalues[:]).to(arg.train_pars.device)
     if net is None:
-        bvalues = torch.FloatTensor(bvalues[:]).to(arg.train_pars.device)
         net = Net(bvalues, arg.net_pars).to(arg.train_pars.device)
     else:
         # if a network was used as input parameter, work with that network instead (transfer learning/warm start).
