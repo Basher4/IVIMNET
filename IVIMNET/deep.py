@@ -58,7 +58,7 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.bvalues = bvalues
         self.net_pars = net_pars
-        if self.net_pars.width is 0:
+        if self.net_pars.width == 0:
             self.net_pars.width = len(bvalues)
         # define number of parameters being estimated
         if self.net_pars.tri_exp:
@@ -110,7 +110,7 @@ class Net(nn.Module):
                     self.fc_layers4.extend([nn.ELU()])
                     self.fc_layers5.extend([nn.ELU()])
             # if dropout is desired, add dropout regularisation
-            if self.net_pars.dropout is not 0 and i is not (self.net_pars.depth - 1):
+            if self.net_pars.dropout != 0 and i != (self.net_pars.depth - 1):
                 self.fc_layers0.extend([nn.Dropout(self.net_pars.dropout)])
                 if self.net_pars.parallel != 'single':
                     self.fc_layers1.extend([nn.Dropout(self.net_pars.dropout)])
@@ -723,7 +723,7 @@ def make_data_complete(dw_data,bvalues,fraction_threshold=0.2):
 
     :return dw_data: corrected dataset
     """
-    if len(np.shape(dw_data)) is 4:
+    if len(np.shape(dw_data)) == 4:
         sx, sy, sz, n_b_values = dw_data.shape
         dw_data = np.reshape(dw_data, (sx * sy * sz, n_b_values))
         reshape = True
