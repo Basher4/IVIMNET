@@ -35,7 +35,7 @@ for SNR in arg.sim.SNR:
     
     start_time = time.time()
     # train network
-    net = deep.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg)
+    net = deep.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg, epochs=1000)
     elapsed_time = time.time() - start_time
     print('\ntime elapsed for training: {}\n'.format(elapsed_time))
 
@@ -60,4 +60,5 @@ for SNR in arg.sim.SNR:
     print('results for lsqfit')
 
     # plot values predict and truth
-    sim.plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR)
+    print(paramsNN)
+    sim.plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='orig_')

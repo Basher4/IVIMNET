@@ -335,7 +335,7 @@ class Net(nn.Module):
                 return X, Dt, Fp, Dp, torch.ones(len(Dt))
 
 
-def learn_IVIM(X_train, bvalues, arg, net=None):
+def learn_IVIM(X_train, bvalues, arg, net=None, epochs=1000):
     """
     This program builds a IVIM-NET network and trains it.
     :param X_train: 2D array of IVIM data we use for training. First axis are the voxels and second axis are the b-values
@@ -411,7 +411,7 @@ def learn_IVIM(X_train, bvalues, arg, net=None):
     final_model = copy.deepcopy(net.state_dict())
 
     ## Train
-    for epoch in range(1000):
+    for epoch in range(epochs):
         print("-----------------------------------------------------------------")
         print("Epoch: {}; Bad epochs: {}".format(epoch, num_bad_epochs))
         # initialising and resetting parameters
@@ -495,9 +495,9 @@ def learn_IVIM(X_train, bvalues, arg, net=None):
                 print("\nDone, best val loss: {}".format(best))
                 break
         # plot loss and plot 4 fitted curves
-        if epoch > 0:
-            # plot progress and intermediate results (if enabled)
-            plot_progress(X_batch.cpu(), X_pred.cpu(), bvalues.cpu(), loss_train, loss_val, arg)
+        # if epoch > 0:
+        #     # plot progress and intermediate results (if enabled)
+        #     plot_progress(X_batch.cpu(), X_pred.cpu(), bvalues.cpu(), loss_train, loss_val, arg)
     print("Done")
     # save final fits
     if arg.fig:

@@ -442,7 +442,7 @@ def sim_signal_predict(arg, SNR):
                 ax[i, j].set_yticks([])
             b_id += 1
     plt.subplots_adjust(hspace=0)
-    plt.show()
+    # plt.show()
     if not os.path.isdir('plots'):
         os.makedirs('plots')
     plt.savefig('plots/plot_dwi_without_noise_param_{snr}_{method}.png'.format(snr=SNR, method=arg.save_name))
@@ -476,7 +476,7 @@ def sim_signal_predict(arg, SNR):
                 ax[i, j].set_yticks([])
             b_id += 1
     plt.subplots_adjust(hspace=0)
-    plt.show()
+    # plt.show()
     plt.savefig('plots/plot_dwi_with_noise_param_{snr}_{method}.png'.format(snr=SNR, method=arg.save_name))
 
     # reshape image
@@ -484,7 +484,7 @@ def sim_signal_predict(arg, SNR):
     return dwi_image_long, Dt_truth, Fp_truth, Dp_truth
 
 
-def plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR):
+def plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix=''):
     # initialise figure
     sx, sy, sb = 100, 100, len(arg.sim.bvalues)
     if arg.fit.do_fit:
@@ -550,5 +550,5 @@ def plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR):
         fig.colorbar(Dp_fit_plot, ax=ax[2, 2], fraction=0.046, pad=0.04)
 
         plt.subplots_adjust(hspace=0.2)
-        plt.show()
-    plt.savefig('plots/plot_imshow_IVIM_param_{snr}.png'.format(snr=SNR, save=arg.save_name))
+        # plt.show()
+    plt.savefig(f'plots/{prefix}plot_imshow_IVIM_param_{SNR}.png'.format(save=arg.save_name))
