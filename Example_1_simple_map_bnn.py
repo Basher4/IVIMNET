@@ -31,6 +31,7 @@ for SNR in arg.sim.SNR:
 
     start_time = time.time()
     # train network
+    # arg.train_pars.lr = 1e-5
     bvalues = torch.FloatTensor(arg.sim.bvalues[:]).to(arg.train_pars.device)
     net = deep_simpl.Net(bvalues, deep_simpl.net_params())
     net = deep.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg, net=net, epochs=1000)

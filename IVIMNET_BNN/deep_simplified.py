@@ -11,6 +11,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as utils
+import torchbnn as bnn
+from torchbnn.modules.batchnorm import _BayesBatchNorm
 
 import IVIMNET.fitting_algorithms as fit
 
@@ -46,6 +48,13 @@ class net_params:
     bounds:     ParamBounds = ParamBounds(D  = MinMax(0.0, 0.005), f  = MinMax(0.0, 0.7), # Dt, Fp
                                           Dp = MinMax(0.005, 0.2), f0 = MinMax(0.0, 2.0)) # Ds, S0
 
+class BayesBatchNorm1d(_BayesBatchNorm):
+    def _check_input_dim(self, input):
+        if input.dim() != 2 and input.dim() != 3:
+            raise ValueError(
+                "expected 2D or 3D input (got {}D input)".format(input.dim())
+            )
+
 class Net(nn.Module):
     def __init__(self, bvalues: np.array, net_params: net_params):
         super().__init__()
@@ -70,15 +79,17 @@ class Net(nn.Module):
         for i in range(self.net_params.depth):
             for layer in self.fc_layers:
                 layer.extend([
-                    nn.Linear(width, self.net_params.width),
-                    nn.BatchNorm1d(self.net_params.width), # Add batch normalization - default param.
-                    nn.ELU(),                              # Add non-linearity - default param.
+                    bnn.BayesLinear(prior_mu=0, prior_sigma=10, in_features=width, out_features=self.net_params.width),
+                    BayesBatchNorm1d(prior_mu=0, prior_sigma=10, num_features=self.net_params.width),
+                    nn.ELU(),
                 ])
                 if i < self.net_params.depth - 1 and self.net_params.dropout:
                     layer.extend([nn.Dropout(self.net_params.dropout)])
 
         # Parallel network to estimate each parameter separately.
-        self.encoder = nn.ModuleList([nn.Sequential(*fcl, nn.Linear(self.net_params.width, 1)) for fcl in self.fc_layers])
+        self.encoder = nn.ModuleList([nn.Sequential(*fcl, bnn.BayesLinear(prior_mu=0, prior_sigma=10,
+                                                                          in_features=self.net_params.width, out_features=1))
+                                      for fcl in self.fc_layers])
 
     def forward(self, X):
         assert(self.net_params.parallel == 'parallel')
