@@ -61,4 +61,4 @@ for SNR in arg.sim.SNR:
 
     # plot values predict and truth
     print(paramsNN)
-    sim.plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='orig_')
+    sim.plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='ivim_')

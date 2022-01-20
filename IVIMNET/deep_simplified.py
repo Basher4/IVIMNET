@@ -4,14 +4,13 @@ from collections import namedtuple
 from dataclasses import dataclass
 import numpy as np
 import copy
-import os
-import warnings
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as utils
 
+from IVIMNET.dropout import BernoulliDropout
 import IVIMNET.fitting_algorithms as fit
 import IVIMNET.deep as deep
 
@@ -72,11 +71,10 @@ class Net(nn.Module):
             for layer in self.fc_layers:
                 layer.extend([
                     nn.Linear(width, self.net_params.width),
+                    BernoulliDropout(self.net_params.dropout),
                     nn.BatchNorm1d(self.net_params.width), # Add batch normalization - default param.
                     nn.ELU(),                              # Add non-linearity - default param.
-                ])
-                if i < self.net_params.depth - 1 and self.net_params.dropout:
-                    layer.extend([nn.Dropout(self.net_params.dropout)])
+                ])                
 
         # Parallel network to estimate each parameter separately.
         self.encoder = nn.ModuleList([nn.Sequential(*fcl, nn.Linear(self.net_params.width, 1)) for fcl in self.fc_layers])
@@ -142,12 +140,13 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, device='cuda'):
 
     for epoch in range(epochs):
         print("-----------------------------------------------------------------")
-        print(f"Epoch: {epoch}; Bad epochs: {num_bad_epochs}", end=' ')
+        print(f"Epoch: {epoch}; Bad epochs: {num_bad_epochs}")
         # initialising and resetting parameters
         net.train()
         running_loss_train = 0.
         running_loss_val = 0.
         for i, X_batch in enumerate(tqdm(trainloader, position=0, leave=True, total=totalit), 0):
+        # for i, X_batch in enumerate(trainloader, 0):
             if i > totalit:
                 # have a maximum number of batches per epoch to ensure regular updates of whether we are improving
                 break
@@ -170,8 +169,9 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, device='cuda'):
             running_loss_train += loss.item()
 
         # validation is always done over all validation data
-        print('- validation')
+        print('Validation')
         for i, X_batch in enumerate(tqdm(inferloader, position=0, leave=True), 0):
+        # for i, X_batch in enumerate(trainloader, 0):
             optimizer.zero_grad()
             X_batch = X_batch.to(arg.train_pars.device)
             # do prediction, only look at predicted IVIM signal
@@ -242,7 +242,7 @@ def predict_IVIM(data, bvalues, net, arg):
                                    drop_last=False)
     # start predicting
     with torch.no_grad():
-        for i, X_batch in enumerate(tqdm(inferloader, position=0, leave=True), 0):
+        for i, X_batch in enumerate(inferloader, 0):
             X_batch = X_batch.to(arg.train_pars.device)
             # here the signal is predicted. Note that we now are interested in the parameters and no longer in the predicted signal decay.
             _, Dtt, Fpt, Dpt, S0t = net(X_batch)
