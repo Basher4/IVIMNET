@@ -12,7 +12,7 @@ This is example 1 modified to verify that my simplification before using BNNs wo
 import IVIMNET.simulations as sim
 from hyperparams import hyperparams as hp_example_1
 import IVIMNET.deep as deep
-import IVIMNET_BNN.deep_simplified as deep_simpl
+import IVIMNET.deep_simplified as deep_simpl
 import time
 import torch
 import IVIMNET.fitting_algorithms as fit
@@ -32,8 +32,7 @@ for SNR in arg.sim.SNR:
     start_time = time.time()
     # train network
     bvalues = torch.FloatTensor(arg.sim.bvalues[:]).to(arg.train_pars.device)
-    net = deep_simpl.Net(bvalues, deep_simpl.net_params())
-    net = deep.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg, net=net, epochs=1000)
+    net = deep_simpl.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg, epochs=5)
     elapsed_time = time.time() - start_time
     print('\ntime elapsed for training: {}\n'.format(elapsed_time))
 
@@ -42,7 +41,7 @@ for SNR in arg.sim.SNR:
 
     # predict
     start_time = time.time()
-    paramsNN = deep.predict_IVIM(dwi_image_long, arg.sim.bvalues, net, arg)
+    paramsNN = deep_simpl.predict_IVIM(dwi_image_long, arg.sim.bvalues, net, arg)
     elapsed_time = time.time() - start_time
     print('\ntime elapsed for inference: {}\n'.format(elapsed_time))
     # remove network to save memory
@@ -50,6 +49,7 @@ for SNR in arg.sim.SNR:
     if arg.train_pars.use_cuda:
         torch.cuda.empty_cache()
 
+    arg.fit.do_fit = False  # Skip lsq fitting.
     start_time = time.time()
     # all fitting is done in the fit.fit_dats for the other fitting algorithms (lsq, segmented and Baysesian)
     paramsf = fit.fit_dats(arg.sim.bvalues, dwi_image_long, arg.fit)
@@ -59,4 +59,4 @@ for SNR in arg.sim.SNR:
 
     # plot values predict and truth
     print(paramsNN)
-    sim.plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='bnn_')
+    sim.plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='bnn_v2_')
