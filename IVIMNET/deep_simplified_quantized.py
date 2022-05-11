@@ -108,16 +108,16 @@ class Net_Quantized(nn.Module):
                 self.dequant(f0+Fp))
 
 
-def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params(), device='cuda'):
+def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
     torch.backends.cudnn.benchmark = True
     arg = deep.checkarg(arg)
 
     ## normalise the signal to b=0 and remove data with nans
     X_train = deep.normalise(X_train, bvalues, arg)
-    bvalues = torch.FloatTensor(bvalues[:]).to(device)
-    net = Net_Quantized(bvalues, net_params).to(device)
+    bvalues = torch.FloatTensor(bvalues[:]).to(arg.train_pars.device)
+    net = Net_Quantized(bvalues, net_params).to(arg.train_pars.device)
 
-    criterion = nn.MSELoss(reduction='mean').to(device)
+    criterion = nn.MSELoss(reduction='mean').to(arg.train_pars.device)
     split = int(np.floor(len(X_train) * arg.train_pars.split))
     train_set, val_set = torch.utils.data.random_split(torch.from_numpy(X_train.astype(np.float32)),
                                                        [split, len(X_train) - split])
@@ -149,6 +149,7 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params(), devi
 
     net.train()
     net.qconfig = torch.quantization.get_default_qat_qconfig("fbgemm")
+    net = torch.quantization.prepare_qat(net)
 
     for epoch in range(epochs):
         print("-----------------------------------------------------------------")
@@ -220,6 +221,8 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params(), devi
     del inferloader
     if arg.train_pars.use_cuda:
         torch.cuda.empty_cache()
+
+    net = torch.quantization.convert(net)
 
     return net
 
