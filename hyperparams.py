@@ -110,7 +110,7 @@ class lsqfit:
         self.do_fit = True # skip lsq fitting
         self.load_lsq = False # load the last results for lsq fit
         self.fitS0 = True # indicates whether to fit S0 (True) or fix it to 1 in the least squares fit.
-        self.jobs = 4 # number of parallel jobs. If set to 1, no parallel computing is used
+        self.jobs = 1 # number of parallel jobs. If set to 1, no parallel computing is used
         if self.method == 'tri-exp' or self.method == 'seg_tri-exp':
             self.bounds = ([0, 0, 0, 0.008, 0, 0.06], [2.5, 0.008, 1, 0.08, 1, 5]) # F0', D0, F1', D1, F2', D2
         else:

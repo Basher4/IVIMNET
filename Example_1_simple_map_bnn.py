@@ -49,7 +49,6 @@ for SNR in arg.sim.SNR:
     if arg.train_pars.use_cuda:
         torch.cuda.empty_cache()
 
-    arg.fit.do_fit = False  # Skip lsq fitting.
     start_time = time.time()
     # all fitting is done in the fit.fit_dats for the other fitting algorithms (lsq, segmented and Baysesian)
     paramsf = fit.fit_dats(arg.sim.bvalues, dwi_image_long, arg.fit)

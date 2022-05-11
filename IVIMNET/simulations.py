@@ -484,13 +484,19 @@ def sim_signal_predict(arg, SNR):
     return dwi_image_long, Dt_truth, Fp_truth, Dp_truth
 
 
-def plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix=''):
+def plot_example1(params, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix=''):
+
+    paramsNN = np.mean([params[x] for x in 'Dt Fp Ds f0'.split()], axis=1)
+    paramsSTD = np.std([params[x] for x in 'Dt Fp Ds f0'.split()], axis=1)
+
     # initialise figure
     sx, sy, sb = 100, 100, len(arg.sim.bvalues)
     if arg.fit.do_fit:
-        fig, ax = plt.subplots(3, 3, figsize=(20, 20))
+        fig, ax = plt.subplots(5, 3, figsize=(20, 20))
     else:
-        fig, ax = plt.subplots(2, 3, figsize=(20, 20))
+        fig, ax = plt.subplots(4, 3, figsize=(20, 20))
+
+
     # fill Figure with values
     Dt_t_plot = ax[0, 0].imshow(Dt_truth, cmap='gray', clim=(0, 0.003))
     ax[0, 0].set_title('Dt, ground truth')
@@ -504,12 +510,25 @@ def plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, pre
     ax[1, 0].set_yticks([])
     fig.colorbar(Dt_plot, ax=ax[1, 0], fraction=0.046, pad=0.04)
 
+    coefov = paramsSTD[0] / paramsNN[0]
+    Dt_plot = ax[2, 0].imshow(np.reshape(coefov, (sx, sy)), cmap='viridis', clim=(np.min(coefov), np.max(coefov)))
+    ax[2, 0].set_title('Dt, coef of var')
+    ax[2, 0].set_xticks([])
+    ax[2, 0].set_yticks([])
+    fig.colorbar(Dt_plot, ax=ax[2, 0], fraction=0.046, pad=0.04)
+
+    Dt_plot = ax[3, 0].imshow(np.reshape(paramsSTD[0], (sx, sy)), cmap='viridis')
+    ax[3, 0].set_title('Dt, stdev')
+    ax[3, 0].set_xticks([])
+    ax[3, 0].set_yticks([])
+    fig.colorbar(Dt_plot, ax=ax[3, 0], fraction=0.046, pad=0.04)
+
     if arg.fit.do_fit:
-        Dt_fit_plot = ax[2, 0].imshow(np.reshape(paramsf[0], (sx, sy)), cmap='gray', clim=(0, 0.003))
-        ax[2, 0].set_title('Dt, fit {fitmethod}'.format(fitmethod=arg.fit.method))
-        ax[2, 0].set_xticks([])
-        ax[2, 0].set_yticks([])
-        fig.colorbar(Dt_fit_plot, ax=ax[2, 0], fraction=0.046, pad=0.04)
+        Dt_fit_plot = ax[4, 0].imshow(np.reshape(paramsf[0], (sx, sy)), cmap='gray', clim=(0, 0.003))
+        ax[4, 0].set_title('Dt, fit {fitmethod}'.format(fitmethod=arg.fit.method))
+        ax[4, 0].set_xticks([])
+        ax[4, 0].set_yticks([])
+        fig.colorbar(Dt_fit_plot, ax=ax[4, 0], fraction=0.046, pad=0.04)
 
     Fp_t_plot = ax[0, 1].imshow(Fp_truth, cmap='gray', clim=(0, 0.5))
     ax[0, 1].set_title('Fp, ground truth')
@@ -522,13 +541,28 @@ def plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, pre
     ax[1, 1].set_xticks([])
     ax[1, 1].set_yticks([])
     fig.colorbar(Fp_plot, ax=ax[1, 1], fraction=0.046, pad=0.04)
+
+    coefov = paramsSTD[1] / paramsNN[1]
+    Dt_plot = ax[2, 1].imshow(np.reshape(coefov, (sx, sy)), cmap='viridis', clim=(np.min(coefov), np.max(coefov)))
+    ax[2, 1].set_title('Fp, coef of var')
+    ax[2, 1].set_xticks([])
+    ax[2, 1].set_yticks([])
+    fig.colorbar(Dt_plot, ax=ax[2, 1], fraction=0.046, pad=0.04)
+    
+    Dt_plot = ax[3, 1].imshow(np.reshape(paramsSTD[1], (sx, sy)), cmap='viridis')
+    ax[3, 1].set_title('Fp, stdev')
+    ax[3, 1].set_xticks([])
+    ax[3, 1].set_yticks([])
+    fig.colorbar(Dt_plot, ax=ax[3, 1], fraction=0.046, pad=0.04)
     
     if arg.fit.do_fit:
-        Fp_fit_plot = ax[2, 1].imshow(np.reshape(paramsf[1], (sx, sy)), cmap='gray', clim=(0, 0.5))
-        ax[2, 1].set_title('f, fit {fitmethod}'.format(fitmethod=arg.fit.method))
-        ax[2, 1].set_xticks([])
-        ax[2, 1].set_yticks([])
-        fig.colorbar(Fp_fit_plot, ax=ax[2, 1], fraction=0.046, pad=0.04)
+        Fp_fit_plot = ax[4, 1].imshow(np.reshape(paramsf[1], (sx, sy)), cmap='gray', clim=(0, 0.5))
+        ax[4, 1].set_title('f, fit {fitmethod}'.format(fitmethod=arg.fit.method))
+        ax[4, 1].set_xticks([])
+        ax[4, 1].set_yticks([])
+        fig.colorbar(Fp_fit_plot, ax=ax[4, 1], fraction=0.046, pad=0.04)
+
+
 
     Dp_t_plot = ax[0, 2].imshow(Dp_truth, cmap='gray', clim=(0.01, 0.1))
     ax[0, 2].set_title('Dp, ground truth')
@@ -541,13 +575,26 @@ def plot_example1(paramsNN, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, pre
     ax[1, 2].set_xticks([])
     ax[1, 2].set_yticks([])
     fig.colorbar(Dp_plot, ax=ax[1, 2], fraction=0.046, pad=0.04)
+
+    coefov = paramsSTD[2] / paramsNN[2]
+    Dt_plot = ax[2, 2].imshow(np.reshape(coefov, (sx, sy)), cmap='viridis', clim=(np.min(coefov), np.max(coefov)))
+    ax[2, 2].set_title('Dp, coef of var')
+    ax[2, 2].set_xticks([])
+    ax[2, 2].set_yticks([])
+    fig.colorbar(Dt_plot, ax=ax[2, 2], fraction=0.046, pad=0.04)
+    
+    Dt_plot = ax[3, 2].imshow(np.reshape(paramsSTD[2], (sx, sy)), cmap='viridis')
+    ax[3, 2].set_title('Dp, stdev')
+    ax[3, 2].set_xticks([])
+    ax[3, 2].set_yticks([])
+    fig.colorbar(Dt_plot, ax=ax[3, 2], fraction=0.046, pad=0.04)
     
     if arg.fit.do_fit:
-        Dp_fit_plot = ax[2, 2].imshow(np.reshape(paramsf[2], (sx, sy)), cmap='gray', clim=(0.01, 0.1))
-        ax[2, 2].set_title('Dp, fit {fitmethod}'.format(fitmethod=arg.fit.method))
-        ax[2, 2].set_xticks([])
-        ax[2, 2].set_yticks([])
-        fig.colorbar(Dp_fit_plot, ax=ax[2, 2], fraction=0.046, pad=0.04)
+        Dp_fit_plot = ax[4, 2].imshow(np.reshape(paramsf[2], (sx, sy)), cmap='gray', clim=(0.01, 0.1))
+        ax[4, 2].set_title('Dp, fit {fitmethod}'.format(fitmethod=arg.fit.method))
+        ax[4, 2].set_xticks([])
+        ax[4, 2].set_yticks([])
+        fig.colorbar(Dp_fit_plot, ax=ax[4, 2], fraction=0.046, pad=0.04)
 
         plt.subplots_adjust(hspace=0.2)
         # plt.show()

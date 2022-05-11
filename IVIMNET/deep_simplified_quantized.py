@@ -46,13 +46,15 @@ class net_params:
     bounds:     ParamBounds = ParamBounds(D  = MinMax(0.0, 0.005), f  = MinMax(0.0, 0.7), # Dt, Fp
                                           Dp = MinMax(0.005, 0.2), f0 = MinMax(0.0, 2.0)) # Ds, S0
 
-class Net(nn.Module):
+class Net_Quantized(nn.Module):
     def __init__(self, bvalues: np.array, net_params: net_params):
         super().__init__()
 
         self.bvalues = bvalues
         self.net_params = net_params
         self.net_params.width = self.net_params.width or len(bvalues)
+        self.quant = torch.quantization.QuantStub()
+        self.dequant = torch.quantization.DeQuantStub()
 
         # Assertions I make because I don't want to implement all the option tree.
         assert(net_params.batch_norm)
@@ -87,6 +89,8 @@ class Net(nn.Module):
         def sigm(param, bound: MinMax):
             return bound.min + torch.sigmoid(param[:, 0].unsqueeze(1)) * bound.delta()
 
+        X = self.quant(X)
+
         pb = self.net_params.bounds
         params = [enc(X) for enc in self.encoder]
         Dt = sigm(params[2], pb.D)
@@ -96,19 +100,24 @@ class Net(nn.Module):
 
         # loss function
         X = Fp * torch.exp(-self.bvalues * Dp) + f0 * torch.exp(-self.bvalues * Dt)
-        return X, Dt, Fp/(f0+Fp), Dp, f0+Fp
+
+        return (self.dequant(X),
+                self.dequant(Dt),
+                self.dequant(Fp/(f0+Fp)),
+                self.dequant(Dp),
+                self.dequant(f0+Fp))
 
 
-def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
+def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params(), device='cuda'):
     torch.backends.cudnn.benchmark = True
     arg = deep.checkarg(arg)
 
     ## normalise the signal to b=0 and remove data with nans
     X_train = deep.normalise(X_train, bvalues, arg)
-    bvalues = torch.FloatTensor(bvalues[:]).to(arg.train_pars.device)
-    net = Net(bvalues, net_params).to(arg.train_pars.device)
+    bvalues = torch.FloatTensor(bvalues[:]).to(device)
+    net = Net_Quantized(bvalues, net_params).to(device)
 
-    criterion = nn.MSELoss(reduction='mean').to(arg.train_pars.device)
+    criterion = nn.MSELoss(reduction='mean').to(device)
     split = int(np.floor(len(X_train) * arg.train_pars.split))
     train_set, val_set = torch.utils.data.random_split(torch.from_numpy(X_train.astype(np.float32)),
                                                        [split, len(X_train) - split])
@@ -138,11 +147,13 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
     # get_ipython().run_line_magic('matplotlib', 'inline')
     final_model = copy.deepcopy(net.state_dict())
 
+    net.train()
+    net.qconfig = torch.quantization.get_default_qat_qconfig("fbgemm")
+
     for epoch in range(epochs):
         print("-----------------------------------------------------------------")
         print(f"Epoch: {epoch}; Bad epochs: {num_bad_epochs}")
         # initialising and resetting parameters
-        net.train()
         running_loss_train = 0.
         running_loss_val = 0.
         for i, X_batch in enumerate(tqdm(trainloader, position=0, leave=True, total=totalit), 0):

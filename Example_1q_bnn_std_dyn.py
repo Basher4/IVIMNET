@@ -25,10 +25,11 @@ import IVIMNET.fitting_algorithms as fit
 # Import parameters
 arg = hp_example_1()
 arg = deep.checkarg(arg)
+arg.train_pars.device = "cpu"
 # arg.fit.do_fit = False  # Skip lsq fitting.
 
 SAMPLES = 50
-TRAIN_MODEL = True
+TRAIN_MODEL = False
 
 print(arg.save_name)
 
@@ -43,18 +44,18 @@ IVIM_signal_noisy, D, f, Dp = sim.sim_signal(SNR, arg.sim.bvalues, sims=arg.sim.
                                             fmax=arg.sim.range[1][1], Dsmin=arg.sim.range[0][2],
                                             Dsmax=arg.sim.range[1][2], rician=arg.sim.rician)
 
-start_time = time.time()
-# train network
 bvalues = torch.FloatTensor(arg.sim.bvalues[:]).to(arg.train_pars.device)
 
 if TRAIN_MODEL:
+    # train network
+    start_time = time.time()
     net = deep_simpl.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg, epochs=EPOCHS)
+    elapsed_time = time.time() - start_time
+    print(f'\ntime elapsed for training: {elapsed_time}\n')
 else:
-    net = deep_simpl.Net(bvalues, deep_simpl.net_params()).to("cuda")
-    net.load_state_dict(torch.load('./models/11bvs_nn_relu_net_dict_1000eps_15SNR.pt'))
-
-elapsed_time = time.time() - start_time
-print(f'\ntime elapsed for training: {elapsed_time}\n')
+    net = deep_simpl.Net(bvalues, deep_simpl.net_params()).to(arg.train_pars.device)
+    net.load_state_dict(torch.load('./models/2022-04-08_12-05-41_11bvs_bnn_relu_net_1000epochs_15SNR.pt'))
+    net = torch.quantization.quantize_dynamic(net, qconfig_spec={torch.nn.Linear}, dtype=torch.qint8)
 
 # simulate IVIM signal for prediction
 [dwi_image_long, Dt_truth, Fp_truth, Dp_truth] = sim.sim_signal_predict(arg, SNR)
@@ -84,10 +85,10 @@ truth = {
 # Save model
 if TRAIN_MODEL:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    torch.save(net.state_dict(), f"./models/{timestamp}_{len(arg.sim.bvalues)}bvs_nn_relu_net_{EPOCHS}epochs_{SNR}SNR.pt")
+    torch.save(net.state_dict(), f"./models/qint8_{len(arg.sim.bvalues)}bvs_bnn_relu_net_{EPOCHS}epochs_{SNR}SNR.pt")
 
 # Print stats
-with open('nn_relu_stdev.txt', 'a') as fd:
+with open('quant_stdev.txt', 'a') as fd:
     print(f'Standard deviation estimates for SNR {SNR}:')
     fd.write(f'Standard deviation estimates for SNR {SNR}:\n')
 
@@ -119,4 +120,4 @@ if arg.train_pars.use_cuda:
 paramsNN = np.mean([params[x] for x in 'Dt Fp Ds f0'.split()], axis=1)
 
 paramsf = fit.fit_dats(arg.sim.bvalues, dwi_image_long, arg.fit)
-sim.plot_example1(params, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='nn_relu_')
+sim.plot_example1(params, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='quant_')
