@@ -99,7 +99,7 @@ class Net(nn.Module):
         return X, Dt, Fp/(f0+Fp), Dp, f0+Fp
 
 
-def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
+def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params(), stats_out=False):
     torch.backends.cudnn.benchmark = True
     arg = deep.checkarg(arg)
 
@@ -137,8 +137,9 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
     loss_val = []
     # get_ipython().run_line_magic('matplotlib', 'inline')
     final_model = copy.deepcopy(net.state_dict())
+    epoch = 0
 
-    for epoch in range(epochs):
+    while epoch < epochs:
         print("-----------------------------------------------------------------")
         print(f"Epoch: {epoch}; Bad epochs: {num_bad_epochs}")
         # initialising and resetting parameters
@@ -200,6 +201,7 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
             if num_bad_epochs == 10:
                 print(f"Done, best val loss: {best}\n")
                 break
+        epoch += 1
     print("Done")
 
     # Restore best model
@@ -210,9 +212,11 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
     if arg.train_pars.use_cuda:
         torch.cuda.empty_cache()
 
+    if stats_out:
+        return net, epoch, best
     return net
 
-def predict_IVIM(data, bvalues, net, arg):
+def predict_IVIM(data, bvalues, net, arg, signals_out=False):
     arg = deep.checkarg(arg)
 
     ## normalise the signal to b=0 and remove data with nans
@@ -230,6 +234,7 @@ def predict_IVIM(data, bvalues, net, arg):
     # tell net it is used for evaluation
     net.eval()
     # initialise parameters and data
+    X  = np.array([])
     Dp = np.array([])
     Dt = np.array([])
     Fp = np.array([])
@@ -245,7 +250,8 @@ def predict_IVIM(data, bvalues, net, arg):
         for i, X_batch in enumerate(inferloader, 0):
             X_batch = X_batch.to(arg.train_pars.device)
             # here the signal is predicted. Note that we now are interested in the parameters and no longer in the predicted signal decay.
-            _, Dtt, Fpt, Dpt, S0t = net(X_batch)
+            Xt, Dtt, Fpt, Dpt, S0t = net(X_batch)
+            X  = np.append(X,  (Xt.cpu()).numpy())
             S0 = np.append(S0, (S0t.cpu()).numpy())
             Dt = np.append(Dt, (Dtt.cpu()).numpy())
             Fp = np.append(Fp, (Fpt.cpu()).numpy())
@@ -258,6 +264,7 @@ def predict_IVIM(data, bvalues, net, arg):
         Fp = 1 - Fp    # here we correct for the data that initially was removed as it did not have IVIM behaviour, by returning zero
 
     # estimates
+    Xtrue = np.asarray(X)
     Dptrue = np.zeros(lend)
     Dttrue = np.zeros(lend)
     Fptrue = np.zeros(lend)
@@ -269,4 +276,7 @@ def predict_IVIM(data, bvalues, net, arg):
     del inferloader
     if arg.train_pars.use_cuda:
         torch.cuda.empty_cache()
+
+    if signals_out:
+        return [Xtrue, Dttrue, Fptrue, Dptrue, S0true]
     return [Dttrue, Fptrue, Dptrue, S0true]

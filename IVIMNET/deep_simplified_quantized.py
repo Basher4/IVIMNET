@@ -149,7 +149,7 @@ def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params()):
 
     net.train()
     net.qconfig = torch.quantization.get_default_qat_qconfig("fbgemm")
-    net = torch.quantization.prepare_qat(net)
+    torch.quantization.prepare_qat(net, inplace=True)
 
     for epoch in range(epochs):
         print("-----------------------------------------------------------------")
