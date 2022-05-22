@@ -27,7 +27,7 @@ arg = hp_example_1()
 arg = deep.checkarg(arg)
 # arg.fit.do_fit = False  # Skip lsq fitting.
 
-SAMPLES = 50
+SAMPLES = 200
 TRAIN_MODEL = True
 
 print(arg.save_name)
@@ -36,7 +36,7 @@ print(arg.save_name)
 # SNRs are [15, 20, 30, 50]
 
 # this simulates the signal
-SNR = int(sys.argv[1])
+SNR = int(sys.argv[1] if len(sys.argv) == 1 else 15)
 EPOCHS = 1000
 IVIM_signal_noisy, D, f, Dp = sim.sim_signal(SNR, arg.sim.bvalues, sims=arg.sim.sims, Dmin=arg.sim.range[0][0],
                                             Dmax=arg.sim.range[1][0], fmin=arg.sim.range[0][1],
@@ -48,7 +48,7 @@ start_time = time.time()
 bvalues = torch.FloatTensor(arg.sim.bvalues[:]).to(arg.train_pars.device)
 
 if TRAIN_MODEL:
-    net = deep_simpl.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg, epochs=EPOCHS)
+    net = deep_simpl.learn_IVIM(IVIM_signal_noisy, arg.sim.bvalues, arg, epochs=EPOCHS, bayes_samples=SAMPLES)
 else:
     net = deep_simpl.Net(bvalues, deep_simpl.net_params()).to("cuda")
     net.load_state_dict(torch.load('./models/11bvs_nn_relu_net_dict_1000eps_15SNR.pt'))
@@ -83,8 +83,7 @@ truth = {
 
 # Save model
 if TRAIN_MODEL:
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    torch.save(net.state_dict(), f"./models/{timestamp}_{len(arg.sim.bvalues)}bvs_nn_relu_net_{EPOCHS}epochs_{SNR}SNR.pt")
+    torch.save(net, f"./models/{len(arg.sim.bvalues)}bvs_bnn-{SAMPLES}ts_relu_net_{EPOCHS}epochs_{SNR}SNR.pt")
 
 # Print stats
 with open('nn_relu_stdev.txt', 'a') as fd:
@@ -119,4 +118,4 @@ if arg.train_pars.use_cuda:
 paramsNN = np.mean([params[x] for x in 'Dt Fp Ds f0'.split()], axis=1)
 
 paramsf = fit.fit_dats(arg.sim.bvalues, dwi_image_long, arg.fit)
-sim.plot_example1(params, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix='nn_relu_')
+sim.plot_example1(params, paramsf, Dt_truth, Fp_truth, Dp_truth, arg, SNR, prefix=f'bnn-{SAMPLES}ts_relu_')
