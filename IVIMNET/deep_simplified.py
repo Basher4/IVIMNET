@@ -100,14 +100,14 @@ class Net(nn.Module):
         return X, Dt, Fp/(f0+Fp), Dp, f0+Fp
 
 
-def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params(), stats_out=False):
+def learn_IVIM(X_train, bvalues, arg, epochs=1000, net_params=net_params(), stats_out=False, bayes_samples=32):
     torch.backends.cudnn.benchmark = True
     arg = deep.checkarg(arg)
 
     ## normalise the signal to b=0 and remove data with nans
     X_train = deep.normalise(X_train, bvalues, arg)
     bvalues = torch.FloatTensor(bvalues[:]).to(arg.train_pars.device)
-    net = Net(bvalues, net_params).to(arg.train_pars.device)
+    net = Net(bvalues, net_params, bayes_samples).to(arg.train_pars.device)
 
     criterion = nn.MSELoss(reduction='mean').to(arg.train_pars.device)
     split = int(np.floor(len(X_train) * arg.train_pars.split))
