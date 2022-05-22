@@ -36,7 +36,7 @@ print(arg.save_name)
 # SNRs are [15, 20, 30, 50]
 
 # this simulates the signal
-SNR = int(sys.argv[1] if len(sys.argv) == 1 else 15)
+SNR = int(sys.argv[1] if len(sys.argv) > 1 else 15)
 EPOCHS = 1000
 IVIM_signal_noisy, D, f, Dp = sim.sim_signal(SNR, arg.sim.bvalues, sims=arg.sim.sims, Dmin=arg.sim.range[0][0],
                                             Dmax=arg.sim.range[1][0], fmin=arg.sim.range[0][1],
