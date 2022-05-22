@@ -47,12 +47,13 @@ class net_params:
                                           Dp = MinMax(0.005, 0.2), f0 = MinMax(0.0, 2.0)) # Ds, S0
 
 class Net(nn.Module):
-    def __init__(self, bvalues: np.array, net_params: net_params):
+    def __init__(self, bvalues: np.array, net_params: net_params, bayes_samples = 32):
         super().__init__()
 
         self.bvalues = bvalues
         self.net_params = net_params
         self.net_params.width = self.net_params.width or len(bvalues)
+        self.bayes_samples = bayes_samples
 
         # Assertions I make because I don't want to implement all the option tree.
         assert(net_params.batch_norm)
@@ -88,7 +89,7 @@ class Net(nn.Module):
             return bound.min + torch.sigmoid(param[:, 0].unsqueeze(1)) * bound.delta()
 
         pb = self.net_params.bounds
-        params = [enc(X) for enc in self.encoder]
+        params = np.mean([[enc(X) for enc in self.encoder] for _ in range(self.bayes_samples)], axis=0)
         Dt = sigm(params[2], pb.D)
         Fp = sigm(params[0], pb.f)
         Dp = sigm(params[1], pb.Dp)

@@ -55,7 +55,7 @@ def plot_ax(bvals, snr, col, err, fig, ax):
         ax[i, col].set_title(f"SNR={snr} bvalue={bvals[i]}")
         ax[i, col].set_xticks([])
         ax[i, col].set_yticks([])
-        plot = ax[i, col].imshow(dat, cmap='gray')
+        plot = ax[i, col].imshow(dat, cmap='gray', clim=(0, 0.05))
         fig.colorbar(plot, ax=ax[i, col])
 
 def plot_signal_err(input, output, bvals, snr, col, fig, ax):
